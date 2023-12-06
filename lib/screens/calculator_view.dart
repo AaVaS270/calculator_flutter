@@ -1,23 +1,8 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: CalculatorView(),
-    );
-  }
-}
-
 class CalculatorView extends StatefulWidget {
-  const CalculatorView({Key? key}) : super(key: key);
-
   @override
-  State<CalculatorView> createState() => _CalcViewState();
+  _CalcViewState createState() => _CalcViewState();
 }
 
 class _CalcViewState extends State<CalculatorView> {
@@ -25,13 +10,11 @@ class _CalcViewState extends State<CalculatorView> {
     "c", "*", "/", "<-", "1", "2", "3", "+", "4", "5", "6", "-", "7", "8", "9", "*", "%", "0", '.', "="
   ];
 
-  final firstNumController = TextEditingController();
-  final secondNumController = TextEditingController();
-  final operationController = TextEditingController();
-
-  int firstnum = 0;
-  int secondnum = 0;
-  int result = 0;
+  final inputController = TextEditingController();
+  String currentNumber = "";
+  String firstNumber = "";
+  String secondNumber = "";
+  String operation = "";
 
   @override
   Widget build(BuildContext context) {
@@ -42,38 +25,23 @@ class _CalcViewState extends State<CalculatorView> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
+            SizedBox(
+              height: 40,
+            ),
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: firstNumController,
-                      decoration: InputDecoration(
-                        // Remove the border
-                        border: InputBorder.none,
-                        // Additional styling
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                        filled: true,
-                        fillColor: Colors.blueGrey.withOpacity(0.1),
-                      ),
-                    ),
+              child: TextFormField(
+                controller: inputController,
+                textAlign: TextAlign.right,
+                readOnly: true,
+                style: TextStyle(fontSize: 24),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Colors.deepOrange, width: 2.0),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: secondNumController,
-                      decoration: InputDecoration(
-                        // Remove the border
-                        border: InputBorder.none,
-                        // Additional styling
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                        filled: true,
-                        fillColor: Colors.blueGrey.withOpacity(0.1),
-                      ),
-                    ),
-                  ),
-                ],
+                  contentPadding: EdgeInsets.all(16),
+                ),
               ),
             ),
             const SizedBox(
@@ -95,9 +63,8 @@ class _CalcViewState extends State<CalculatorView> {
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey,
-                          foregroundColor: Colors.white,
-                        ),
+                            backgroundColor: Colors.deepOrange,
+                            foregroundColor: Colors.white),
                         child: Text(
                           str[i],
                           style: const TextStyle(fontSize: 20),
@@ -116,47 +83,99 @@ class _CalcViewState extends State<CalculatorView> {
 
   // function to handle calculator functionality
   void handleButtonPress(String buttonText) {
-    firstNumController.text += buttonText;
-    switch (buttonText) {
-      case '+':
-        operationController.text = '+';
-        firstNumController.text = '';
-        break;
-      case '-':
-        operationController.text = '-';
-        firstNumController.text = '';
-        break;
-      case '*':
-        operationController.text = '*';
-        firstNumController.text = '';
-        break;
-      case 'c':
-        operationController.text = '';
-        firstNumController.clear();
-        secondNumController.clear();
-        firstnum = 0;
-        secondnum = 0;
-        break;
-      case '=':
-        if (operationController.text == "+") {
-          result = firstnum + secondnum;
-          firstNumController.text = result.toString();
-        } else if (operationController.text == '-') {
-          result = secondnum - firstnum;
-          firstNumController.text = result.toString();
-        } else if (operationController.text == '*') {
-          result = firstnum * secondnum;
-          firstNumController.text = result.toString();
-        }
-        secondNumController.text = '';
-        break;
-      default:
-        if (operationController.text.isNotEmpty) {
-          firstnum = int.tryParse(firstNumController.text) ?? 0;
-        } else {
-          secondNumController.text += buttonText;
-        }
-        secondnum = int.tryParse(secondNumController.text) ?? 0;
+    if (buttonText == "<-") {
+      handleBackspace();
+    } else if (buttonText == "c") {
+      handleClear();
+    } else if (buttonText == "+" || buttonText == "-" || buttonText == "*" || buttonText == "/") {
+      handleOperator(buttonText);
+    } else if (buttonText == "=") {
+      handleEqual();
+    } else {
+      handleNumber(buttonText);
     }
+  }
+
+  void handleBackspace() {
+    String currentText = inputController.text;
+    if (currentText.isNotEmpty) {
+      setState(() {
+        inputController.text = currentText.substring(0, currentText.length - 1);
+      });
+    }
+  }
+
+  void handleClear() {
+    setState(() {
+      inputController.clear();
+      currentNumber = "";
+      firstNumber = "";
+      secondNumber = "";
+      operation = "";
+    });
+  }
+
+  void handleOperator(String operator) {
+    if (currentNumber.isNotEmpty) {
+      setState(() {
+        operation = operator;
+        firstNumber = currentNumber;
+        currentNumber = "";
+        inputController.text = firstNumber + operation;
+      });
+    }
+  }
+
+  void handleEqual() {
+    if (operation.isNotEmpty && currentNumber.isNotEmpty) {
+      int num1 = int.tryParse(firstNumber) ?? 0;
+      int num2 = int.tryParse(currentNumber) ?? 0;
+
+      switch (operation) {
+        case "+":
+          currentNumber = (num1 + num2).toString();
+          break;
+        case "-":
+          currentNumber = (num1 - num2).toString();
+          break;
+        case "*":
+          currentNumber = (num1 * num2).toString();
+          break;
+        case "/":
+          if (num2 != 0) {
+            currentNumber = (num1 ~/ num2).toString(); // Using integer division for simplicity
+          } else {
+            currentNumber = "Error"; // Division by zero, handle as needed
+          }
+          break;
+      }
+
+      setState(() {
+        inputController.text = currentNumber;
+        operation = "";
+        firstNumber = "";
+        secondNumber = "";
+      });
+    }
+  }
+
+  void handleNumber(String number) {
+    setState(() {
+      currentNumber += number;
+      inputController.text = firstNumber + operation + currentNumber;
+    });
+  }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: CalculatorView(),
+    );
   }
 }
